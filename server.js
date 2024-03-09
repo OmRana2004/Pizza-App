@@ -1,33 +1,69 @@
-const express = require('express')
-const app = express()
-const ejs = require('ejs')
-const path = require('path')
-const expressLayout = require('express-ejs-layouts')
-const PORT = process.env.PORT || 3300
-app.use(express.static('public'))
+require('dotenv').config();
+const express = require('express');
+const app = express();
+const ejs = require('ejs');
+const path = require('path');
+const expressLayout = require('express-ejs-layouts');
+const PORT = process.env.PORT || 3300;
+const mongoose = require('mongoose');
+const session = require('express-session');
+const flash = require('express-flash');
+const MongoStore = require('connect-mongo');
+// const MongoStore = connectMongo(session);
 
 
-  app.use(expressLayout)
-  app.set('views', path.join(__dirname, '/resources/views'))
-  app.set('view engine', 'ejs')
 
-  app.get('/', (req, res) => {
-    res.render('home')
-  })
 
-  app.get('/cart', (req, res) => {
-    res.render('customers/cart')
-  })
+//database
+const url = 'mongodb+srv://omrana2025:Omrana2004@cluster0.zqeck8h.mongodb.net/pizza?retryWrites=true&w=majority&appName=Cluster0';
+mongoose.connect(url);
 
-  app.get('/login', (req, res) => {
-    res.render('auth/login')
-  })
+const connection = mongoose.connection;
 
-  app.get('/register', (req, res) => {
-    res.render('auth/register')
-  })
+connection.once('open', () => {
+  console.log('MongoDB connected...');
+});
 
+connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+// Session Store
+const sessionStorage = MongoStore.create({
+  mongoUrl:url,
+  dbName: 'pizza',
+  collectionName: 'sessions'
+})
+
+// Session Config 
+app.use(session({
+  secret: process.env.COOKIE_SECRET,
+  resave: false,
+  store: sessionStorage,
+  saveUninitialized: false,
+  cookie: { maxAge: 1000 * 60 * 60 * 24 },  // 24 hour
+}));
+
+
+app.use(flash());
+
+
+// Assets
+app.use(express.static('public'));
+app.use(express.json())
+
+// Global middleware
+app.use((req, res, next) => {
+  res.locals.session = req.session
+  next()
+})
+// Set Template engine
+app.use(expressLayout);
+app.set('views', path.join(__dirname, '/resources/views'));
+app.set('view engine', 'ejs');
+
+require('./routes/web')(app);
 
 app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`)
-})
+  console.log(`Listening on port ${PORT}`);
+});
