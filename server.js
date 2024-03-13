@@ -16,8 +16,8 @@ const Emitter = require('events')
 
 
 //database
-const url = 'mongodb+srv://omrana2025:Omrana2004@cluster0.zqeck8h.mongodb.net/pizza?retryWrites=true&w=majority&appName=Cluster0';
-mongoose.connect(url);
+// const url = 'mongodb+srv://omrana2025:Omrana2004@cluster0.zqeck8h.mongodb.net/pizza?retryWrites=true&w=majority&appName=Cluster0';
+mongoose.connect(process.env.MONGO_CONNECTION_URL);
 
 const connection = mongoose.connection;
 
@@ -31,7 +31,7 @@ connection.on('error', (err) => {
 
 // Session Store
 const sessionStorage = MongoStore.create({
-  mongoUrl:url,
+  mongoUrl: process.env.MONGO_CONNECTION_URL,
   dbName: 'pizza',
   collectionName: 'sessions'
 })
@@ -76,6 +76,9 @@ app.set('views', path.join(__dirname, '/resources/views'));
 app.set('view engine', 'ejs');
 
 require('./routes/web')(app);
+app.use((req, res) => {
+  res.status(404).render('errors/404')
+})
 
 const server = app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
